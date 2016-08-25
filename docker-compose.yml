@@ -1,0 +1,15 @@
+lb:
+  image: dockercloud/haproxy
+  links:
+    - version-server:version-server
+  ports:
+    - 80:80
+
+version-server:
+  image: willko/version-server
+  environment:
+    - VIRTUAL_HOST=dev.sketch.io
+  ports:
+    - 7447:7447
+
+
