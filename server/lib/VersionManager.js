@@ -39,7 +39,11 @@ class VersionManager
     const diffTime = currentTime - vTime;
     let resultString = '';
 
-    if (diffTime > 60e3) {
+    if ((diffTime / 60) > 60e3) {
+      const hours = Math.floor((diffTime / 60e3) / 60);
+      resultString = `${hours} hours ago`;
+    }
+    else if (diffTime > 60e3) {
       const minutes = Math.floor(diffTime / 60e3);
       resultString = `${minutes} minutes ago`;
     }
@@ -71,12 +75,12 @@ class VersionManager
           const deployedDate = this._formatDate(new Date(vData.timestamp));
           resolve({
             response_type: 'in_channel',
-            text: `Version: ${vData.version} deployed ${sinceTimeString}`,
+            text: `Version ${vData.version} was deployed ${sinceTimeString}`,
             attachments: [
             {
               title: `Version ${vData.version}`,
               title_link: url || `https://${this._host}/${this._version}`,
-              text: `New version deployed ${deployedDate}`
+              text: `Deployed ${deployedDate}`
             }
             ]
           });

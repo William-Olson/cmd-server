@@ -1,0 +1,29 @@
+haproxy:
+  image: 'interaction/haproxy:master'
+  links:
+    - letsencrypt
+    - version-server
+  ports:
+    - '80:80'
+    - '443:443'
+  roles:
+    - global
+  volumes_from:
+    - letsencrypt
+
+letsencrypt:
+  image: 'interaction/letsencrypt:master'
+  environment:
+    - 'DOMAINS=wko.io,www.wko.io;dev-will.com,www.dev-will.com'
+    - EMAIL=willko747@gmail.com
+  expose:
+    - '80'
+
+version-server:
+  image: 'willko/version-server:latest'
+  autoredeploy: true
+  environment:
+    - FORCE_SSL=yes
+    - 'VIRTUAL_HOST=*,https://*'
+  ports:
+    - '7447:7447'
