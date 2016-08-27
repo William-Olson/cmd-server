@@ -4,8 +4,12 @@ WORKDIR /opt/server
 
 EXPOSE 7447
 
-COPY . /opt/server
+RUN mkdir -p /opt/server
+
+COPY ./package.json /opt/server/package.json
 
 RUN npm install
+
+COPY . /opt/server
 
 CMD ["npm", "start"]

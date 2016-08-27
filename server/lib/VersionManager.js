@@ -61,7 +61,7 @@ class VersionManager
     return `${month} ${day}, ${year}`;
   }
 
-  _createNotification(url)
+  createNotification(url)
   {
     return new Promise((resolve, reject) => {
       this._fetchVersion(url)
@@ -83,13 +83,6 @@ class VersionManager
         }).catch(err => {
           reject(err);
         });
-    });
-  }
-
-  sendNotification()
-  {
-    this._createNotification().then(payload => {
-      //TODO send data to slack via https
     });
   }
 
