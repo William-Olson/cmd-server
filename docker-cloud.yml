@@ -14,7 +14,7 @@ haproxy:
 letsencrypt:
   image: 'interaction/letsencrypt:master'
   environment:
-    - 'DOMAINS=wko.io,www.wko.io;dev-will.com,www.dev-will.com'
+    - 'DOMAINS=dev-will.com,www.dev-will.com'
     - EMAIL=willko747@gmail.com
   expose:
     - '80'
