@@ -1,4 +1,4 @@
-FROM node:6.4
+FROM node:7
 
 WORKDIR /opt/server
 

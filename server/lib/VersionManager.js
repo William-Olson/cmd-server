@@ -1,33 +1,23 @@
-const request = require('request');
-const Promise = require('bluebird');
+const rp = require('request-promise');
 
+const SERVER = process.env.VERSION_SERVER;
 const HOST = process.env.VERSION_HOST;
 const VERSION = process.env.VERSION_ROUTE;
 
 class VersionManager
 {
 
-  constructor(host, path)
+  constructor(server, host, path)
   {
+    this._server = server || SERVER;
     this._host = host || HOST;
     this._version = path || VERSION;
   }
 
-  _fetchVersion(url)
+  async _fetchVersion(url)
   {
-    url = url || `https://${this._host}/${this._version}`;
-
-    return new Promise(function(resolve, reject) {
-      request(url, (err, resp, data) => {
-
-        if (err) {
-          return reject(err);
-        }
-
-        return resolve(data);
-      });
-
-    });
+    url = url || `https://${this._server}.${this._host}/${this._version}`;
+    return await rp(url);
   }
 
   _getTimeLapsed(data)
@@ -65,30 +55,47 @@ class VersionManager
     return `${month} ${day}, ${year}`;
   }
 
-  createNotification(url)
+  async createSlugNotif(slug, path)
   {
-    return new Promise((resolve, reject) => {
-      this._fetchVersion(url)
-        .then(data => {
-          const vData = JSON.parse(data);
-          const sinceTimeString = this._getTimeLapsed(vData);
-          const deployedDate = this._formatDate(new Date(vData.timestamp));
-          resolve({
-            response_type: 'in_channel',
-            text: `Version ${vData.version} was deployed ${sinceTimeString}`,
-            attachments: [
-            {
-              title: `Version ${vData.version}`,
-              title_link: url || `https://${this._host}/${this._version}`,
-              text: `Deployed ${deployedDate}`
-            }
-            ]
-          });
-        }).catch(err => {
-          reject(err);
-        });
-    });
+    slug = slug || `${this._server}`;
+    path = path || `${this._host}/${this._version}`;
+    const data = await this._fetchVersion(`https://${slug}.${path}`);
+    const vData = JSON.parse(data);
+    const sinceTimeString = this._getTimeLapsed(vData);
+    const deployedDate = this._formatDate(new Date(vData.timestamp));
+    return {
+      response_type: 'in_channel',
+      text: `Version ${vData.version} for _*${slug}*_ was deployed ${sinceTimeString}`,
+      attachments: [
+        {
+          title: `Version ${vData.version}`,
+          title_link: `https://${slug}.${path}`,
+          text: `Deployed ${deployedDate}`
+        }
+      ]
+    };
   }
+
+  async createNotification(url)
+  {
+    const data = await this._fetchVersion(url);
+    const vData = JSON.parse(data);
+    const sinceTimeString = this._getTimeLapsed(vData);
+    const deployedDate = this._formatDate(new Date(vData.timestamp));
+    return {
+      response_type: 'in_channel',
+      text: `-> ${url || `https://${this._host}/${this._version}`}\n` +
+            `Version ${vData.version} was deployed ${sinceTimeString}`,
+      attachments: [
+        {
+          title: `Version ${vData.version}`,
+          title_link: url || `https://${this._host}/${this._version}`,
+          text: `Deployed ${deployedDate}`
+        }
+      ]
+    };
+  }
+
 
 }
 

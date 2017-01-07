@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 const VersionManager = require('./lib/VersionManager');
-
 const vm = new VersionManager();
 
 /*
@@ -41,7 +40,29 @@ router.get('/cmd/version', function(req, res, next) {
   }
 });
 
+/**
+ * get slug version
+ */
+router.post('/slug-version', async (req, res, next) => {
+  try {
+    let params = req.body.text;
+    const cmd = req.body.command;
 
+    if (!cmd.includes('/version')) {
+      throw new Error('Bad Command');
+    }
+
+    if (params.includes(' ')) {
+      params = params.trim().split(' ')[0];
+    }
+
+    const notif = await vm.createSlugNotif(params);
+    res.send(notif);
+  }
+  catch (err) {
+    next(err);
+  }
+});
 
 /*
   Fixed commands / rapid dev testing route
