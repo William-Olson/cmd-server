@@ -9,9 +9,9 @@ class VersionManager
 
   constructor(server, host, path)
   {
-    this._server = server || SERVER;
-    this._host = host || HOST;
-    this._version = path || VERSION;
+    this._server  = server || SERVER;
+    this._host    = host   || HOST;
+    this._version = path   || VERSION;
   }
 
   async _fetchVersion(url)
@@ -55,21 +55,24 @@ class VersionManager
     return `${month} ${day}, ${year}`;
   }
 
-  async createSlugNotif(slug, path)
+  async createSlugNotif(slug, host, path)
   {
-    slug = slug || `${this._server}`;
-    path = path || `${this._host}/${this._version}`;
-    const data = await this._fetchVersion(`https://${slug}.${path}`);
+    slug = slug || this._server;
+    host = host || this._host;
+    path = path || this._version;
+
+    const data = await this._fetchVersion(`https://${slug}.${host}/${path}`);
     const vData = JSON.parse(data);
     const sinceTimeString = this._getTimeLapsed(vData);
     const deployedDate = this._formatDate(new Date(vData.timestamp));
+
     return {
       response_type: 'in_channel',
       text: `Version ${vData.version} for _*${slug}*_ was deployed ${sinceTimeString}`,
       attachments: [
         {
           title: `Version ${vData.version}`,
-          title_link: `https://${slug}.${path}`,
+          title_link: `https://${slug}.${host}`,
           text: `Deployed ${deployedDate}`
         }
       ]
@@ -82,14 +85,15 @@ class VersionManager
     const vData = JSON.parse(data);
     const sinceTimeString = this._getTimeLapsed(vData);
     const deployedDate = this._formatDate(new Date(vData.timestamp));
+
     return {
       response_type: 'in_channel',
-      text: `-> ${url || `https://${this._host}/${this._version}`}\n` +
+      text: `-> ${url || `https://${this._server}.${this._host}`}\n` +
             `Version ${vData.version} was deployed ${sinceTimeString}`,
       attachments: [
         {
           title: `Version ${vData.version}`,
-          title_link: url || `https://${this._host}/${this._version}`,
+          title_link: url || `https://${this._server}.${this._host}`,
           text: `Deployed ${deployedDate}`
         }
       ]

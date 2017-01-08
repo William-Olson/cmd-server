@@ -3,11 +3,9 @@ var router = express.Router();
 const VersionManager = require('./lib/VersionManager');
 const vm = new VersionManager();
 
-/*
-  TODO: implement some token auth
-*/
-
-
+const slackErr = {
+  Message: 'Uh oh: Bad Request =('
+};
 
 /*
   Root route
@@ -21,22 +19,17 @@ router.get('/', function(req, res, next) {
   }
 });
 
-
-
 /*
   General Version command route
 */
-router.get('/cmd/version', function(req, res, next) {
+router.get('/version', async (req, res, next) => {
   try {
     let url = req.query.q || null;
-    vm.createNotification(url)
-      .then(notif => res.send(notif))
-      .catch(err => {
-        res.send({ error: 'An error occurred!', err });
-      });
+    const notif = await vm.createNotification(url)
+    res.send(notif);
   }
   catch (err) {
-    next(err);
+    next(slackErr);
   }
 });
 
@@ -45,22 +38,22 @@ router.get('/cmd/version', function(req, res, next) {
  */
 router.post('/slug-version', async (req, res, next) => {
   try {
-    let params = req.body.text;
     const cmd = req.body.command;
+    let slug = req.body.text;
 
     if (!cmd.includes('/version')) {
       throw new Error('Bad Command');
     }
 
-    if (params.includes(' ')) {
-      params = params.trim().split(' ')[0];
+    if (slug.includes(' ')) {
+      slug = slug.trim().split(' ')[0];
     }
 
-    const notif = await vm.createSlugNotif(params);
+    const notif = await vm.createSlugNotif(slug);
     res.send(notif);
   }
   catch (err) {
-    next(err);
+    next(slackErr);
   }
 });
 
@@ -70,7 +63,7 @@ router.post('/slug-version', async (req, res, next) => {
 router.post('/cmd', function(req, res, next) {
   try {
     const cmd = req.body.command;
-    const params = cmd.split(' ');
+    const params = req.body.text.split(' ');
 
     if (!params.length) {
       throw new Error('Must provide params');
