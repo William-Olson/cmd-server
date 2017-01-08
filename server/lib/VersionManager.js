@@ -1,4 +1,5 @@
 const rp = require('request-promise');
+const moment = require('moment');
 
 const SERVER = process.env.VERSION_SERVER;
 const HOST = process.env.VERSION_HOST;
@@ -20,39 +21,16 @@ class VersionManager
     return await rp(url);
   }
 
-  _getTimeLapsed(data)
+  _getTimeLapsed(date)
   {
-    const vTime = new Date(data.timestamp);
-    const currentTime = new Date();
-
-    // calc time passed
-    const diffTime = currentTime - vTime;
-    let resultString = '';
-
-    if ((diffTime / 60) > 60e3) {
-      const hours = Math.floor((diffTime / 60e3) / 60);
-      resultString = `${hours} hours ago`;
-    }
-    else if (diffTime > 60e3) {
-      const minutes = Math.floor(diffTime / 60e3);
-      resultString = `${minutes} minutes ago`;
-    }
-    else {
-      const sec = Math.floor(diffTime / 1e3);
-      resultString = `${sec} seconds ago`;
-    }
-
-    return resultString;
+    const vTime = moment(date);
+    const currentTime = moment(new Date());
+    return moment.duration(currentTime.diff(vTime)).humanize();
   }
 
   _formatDate(date)
   {
-    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'];
-    const day = date.getDate();
-    const month = MONTHS[date.getMonth()];
-    const year = date.getFullYear();
-    return `${month} ${day}, ${year}`;
+    return moment(date).format('MMMM Do, YYYY');
   }
 
   async createSlugNotif(slug, host, path)
@@ -63,12 +41,12 @@ class VersionManager
 
     const data = await this._fetchVersion(`https://${slug}.${host}/${path}`);
     const vData = JSON.parse(data);
-    const sinceTimeString = this._getTimeLapsed(vData);
+    const sinceTimeString = this._getTimeLapsed(new Date(vData.timestamp));
     const deployedDate = this._formatDate(new Date(vData.timestamp));
 
     return {
       response_type: 'in_channel',
-      text: `Version ${vData.version} for _*${slug}*_ was deployed ${sinceTimeString}`,
+      text: `Version ${vData.version} for _*${slug}*_ was deployed ${sinceTimeString} ago`,
       attachments: [
         {
           title: `Version ${vData.version}`,
@@ -83,13 +61,13 @@ class VersionManager
   {
     const data = await this._fetchVersion(url);
     const vData = JSON.parse(data);
-    const sinceTimeString = this._getTimeLapsed(vData);
+    const sinceTimeString = this._getTimeLapsed(new Date(vData.timestamp));
     const deployedDate = this._formatDate(new Date(vData.timestamp));
 
     return {
       response_type: 'in_channel',
       text: `-> ${url || `https://${this._server}.${this._host}`}\n` +
-            `Version ${vData.version} was deployed ${sinceTimeString}`,
+            `Version ${vData.version} was deployed ${sinceTimeString} ago`,
       attachments: [
         {
           title: `Version ${vData.version}`,
