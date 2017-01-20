@@ -57,38 +57,5 @@ router.post('/slug-version', async (req, res, next) => {
   }
 });
 
-/*
-  Fixed commands / rapid dev testing route
-*/
-router.post('/cmd', function(req, res, next) {
-  try {
-    const cmd = req.body.command;
-    const params = req.body.text.split(' ');
-
-    if (!params.length) {
-      throw new Error('Must provide params');
-    }
-
-    switch (cmd) {
-      case '/cmd1':
-        // handle example command 1
-        res.send({ ok: true, cmd, params });
-        break;
-      case '/cmd2':
-        // handle example command 2
-        res.send({ ok: true, cmd, params });
-        break;
-      default:
-        throw new Error(`Bad cmd ${cmd}`);
-        break;
-    }
-  }
-  catch (err) {
-    next(err);
-  }
-});
-
-
-
 module.exports = router;
 

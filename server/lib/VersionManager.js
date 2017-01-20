@@ -46,12 +46,12 @@ class VersionManager
 
     return {
       response_type: 'in_channel',
-      text: `Version ${vData.version} for _*${slug}*_ was deployed ${sinceTimeString} ago`,
+      text: `Version ${vData.version} for _*${slug}*_ was built ${sinceTimeString} ago`,
       attachments: [
         {
           title: `Version ${vData.version}`,
           title_link: `https://${slug}.${host}`,
-          text: `Deployed ${deployedDate}`
+          text: `Build Date: ${deployedDate}`
         }
       ]
     };
@@ -67,12 +67,12 @@ class VersionManager
     return {
       response_type: 'in_channel',
       text: `-> ${url || `https://${this._server}.${this._host}`}\n` +
-            `Version ${vData.version} was deployed ${sinceTimeString} ago`,
+            `Version ${vData.version} was built ${sinceTimeString} ago`,
       attachments: [
         {
           title: `Version ${vData.version}`,
           title_link: url || `https://${this._server}.${this._host}`,
-          text: `Deployed ${deployedDate}`
+          text: `Build Date: ${deployedDate}`
         }
       ]
     };
