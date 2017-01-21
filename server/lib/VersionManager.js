@@ -12,13 +12,13 @@ class VersionManager
   {
     this._server  = server || SERVER;
     this._host    = host   || HOST;
-    this._version = path   || VERSION;
+    this._versionPath = path   || VERSION;
   }
 
   async _fetchVersion(url)
   {
-    url = url || `https://${this._server}.${this._host}/${this._version}`;
-    return await rp(url);
+    url = url || `https://${this._server}.${this._host}/${this._versionPath}`;
+    return await rp({ url, json: true });
   }
 
   _getTimeLapsed(date)
@@ -37,21 +37,21 @@ class VersionManager
   {
     slug = slug || this._server;
     host = host || this._host;
-    path = path || this._version;
+    path = path || this._versionPath;
 
-    const data = await this._fetchVersion(`https://${slug}.${host}/${path}`);
-    const vData = JSON.parse(data);
+    const vData = await this._fetchVersion(`https://${slug}.${host}/${path}`);
     const sinceTimeString = this._getTimeLapsed(new Date(vData.timestamp));
     const deployedDate = this._formatDate(new Date(vData.timestamp));
+    const capitalizedSlug = `${slug[0].toUpperCase()}${slug.substr(1, slug.length - 1)}`
 
     return {
       response_type: 'in_channel',
-      text: `Version ${vData.version} for _*${slug}*_ was built ${sinceTimeString} ago`,
+      text: `_*${capitalizedSlug}*_ is running Version ${vData.version}`,
       attachments: [
         {
           title: `Version ${vData.version}`,
           title_link: `https://${slug}.${host}`,
-          text: `Build Date: ${deployedDate}`
+          text: `Build Date: ${deployedDate} (${sinceTimeString} ago)`
         }
       ]
     };
@@ -59,8 +59,7 @@ class VersionManager
 
   async createNotification(url)
   {
-    const data = await this._fetchVersion(url);
-    const vData = JSON.parse(data);
+    const vData = await this._fetchVersion(url);
     const sinceTimeString = this._getTimeLapsed(new Date(vData.timestamp));
     const deployedDate = this._formatDate(new Date(vData.timestamp));
 
