@@ -41,17 +41,17 @@ class VersionManager
 
     const vData = await this._fetchVersion(`https://${slug}.${host}/${path}`);
     const sinceTimeString = this._getTimeLapsed(new Date(vData.timestamp));
-    const deployedDate = this._formatDate(new Date(vData.timestamp));
+    const buildDate = this._formatDate(new Date(vData.timestamp));
     const capitalizedSlug = `${slug[0].toUpperCase()}${slug.substr(1, slug.length - 1)}`
 
     return {
       response_type: 'in_channel',
-      text: `_*${capitalizedSlug}*_ is running Version ${vData.version}`,
+      text: `_*${capitalizedSlug}*_ is running version *${vData.version}*`,
       attachments: [
         {
-          title: `Version ${vData.version}`,
+          title: `${slug}.${host}`,
           title_link: `https://${slug}.${host}`,
-          text: `Build Date: ${deployedDate} (${sinceTimeString} ago)`
+          text: `Image built ${buildDate} (${sinceTimeString} ago)`
         }
       ]
     };
@@ -61,17 +61,17 @@ class VersionManager
   {
     const vData = await this._fetchVersion(url);
     const sinceTimeString = this._getTimeLapsed(new Date(vData.timestamp));
-    const deployedDate = this._formatDate(new Date(vData.timestamp));
+    const buildDate = this._formatDate(new Date(vData.timestamp));
 
     return {
       response_type: 'in_channel',
-      text: `-> ${url || `https://${this._server}.${this._host}`}\n` +
+      text: `${url || `https://${this._server}.${this._host}`}\n` +
             `Version ${vData.version} was built ${sinceTimeString} ago`,
       attachments: [
         {
           title: `Version ${vData.version}`,
           title_link: url || `https://${this._server}.${this._host}`,
-          text: `Build Date: ${deployedDate}`
+          text: `Build Date: ${buildDate}`
         }
       ]
     };
