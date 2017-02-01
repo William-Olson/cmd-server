@@ -8,7 +8,7 @@ lb:
 version-server:
   image: willko/version-server
   environment:
-    - VIRTUAL_HOST=dev.sketch.io
+    - VIRTUAL_HOST=http://*,https://*
   ports:
     - 7447:7447
 

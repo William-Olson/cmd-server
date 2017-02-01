@@ -8,7 +8,10 @@ const express = require('express');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-const routes = require('./routes.js');
+const Harness = require('route-harness');
+const customWrapper = require('./harness-wrapper.js');
+const routes = require('./CmdRoutes.js');
+
 const app = express();
 
 (function init()
@@ -19,7 +22,8 @@ const app = express();
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(cookieParser());
 
-  app.use('/', routes);
+  const harness = new Harness(app, { customWrapper });
+  harness.use('/', routes);
 
   // catch 404 and forward to error handler
   app.use(function(req, res, next) {
