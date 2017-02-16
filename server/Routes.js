@@ -1,6 +1,6 @@
 const VersionManager = require('./VersionManager');
 
-module.exports = class CmdRoutes {
+module.exports = class Routes {
 
   constructor({ harness })
   {
