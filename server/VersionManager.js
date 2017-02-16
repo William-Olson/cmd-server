@@ -43,6 +43,34 @@ class VersionManager
     };
   }
 
+  async createMultiSlugNotif(slugs, host, path)
+  {
+    if (!slugs || !slugs.length) {
+      throw new Error('slugs must be an array');
+    }
+
+    host = host || this._host;
+    path = path || this._versionPath;
+    const attachments = [];
+
+    for (let slug of slugs) {
+      const url = `https://${slug}.${host}/${path}`;
+      const { version, sinceTime, buildDate } = await this._getVersionInfo(url);
+      const capSlug = `${slug[0].toUpperCase()}${slug.substr(1, slug.length - 1)}`;
+      attachments.push({
+        title: `${capSlug} is running ${version}`,
+        title_link: `https://${slug}.${host}`,
+        text: `Image built ${buildDate} (${sinceTime} ago)`
+      });
+    }
+
+    return {
+      response_type: 'in_channel',
+      text: 'Listing versions',
+      attachments
+    };
+  }
+
   async createSlugNotif(slug, host, path)
   {
     slug = slug || this._server;

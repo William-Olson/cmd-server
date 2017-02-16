@@ -40,8 +40,15 @@ module.exports = class CmdRoutes {
       throw new Error('Bad Command');
     }
 
+    // handle multi param requests
     if (slug.includes(' ')) {
-      slug = slug.trim().split(' ')[0];
+      const slugs = slug.trim().split(' ');
+
+      if (slugs.length > 1) {
+        return await this._vm.createMultiSlugNotif(slugs);
+      }
+
+      slug = slugs[0];
     }
 
     return await this._vm.createSlugNotif(slug);
