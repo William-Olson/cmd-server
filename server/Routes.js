@@ -1,4 +1,4 @@
-const VersionManager = require('./lib/VersionManager');
+const VersionManager = require('./VersionManager');
 
 module.exports = class CmdRoutes {
 

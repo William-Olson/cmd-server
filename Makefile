@@ -1,4 +1,5 @@
-all: lb-pull server
+all: kill lb-pull server
+	docker-compose up -d
 	@echo done
 
 server: FORCE
@@ -6,6 +7,10 @@ server: FORCE
 
 lb-pull: FORCE
 	docker pull dockercloud/haproxy:latest
+
+kill:
+	docker-compose kill || true
+	docker-compose rm -f || true
 
 FORCE:
 

@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const Harness = require('route-harness');
 const customWrapper = require('./harness-wrapper.js');
-const routes = require('./CmdRoutes.js');
+const routes = require('./Routes.js');
 
 const app = express();
 
