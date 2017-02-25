@@ -1,5 +1,6 @@
 const rp = require('request-promise');
 const moment = require('moment');
+const ClientManager = require('./ClientManager');
 
 const SERVER = process.env.VERSION_SERVER;
 const HOST = process.env.VERSION_HOST;
@@ -13,6 +14,8 @@ class VersionManager
     this._server      = server || SERVER;
     this._host        = host   || HOST;
     this._versionPath = path   || VERSION;
+
+    this._clientManager = new ClientManager();
   }
 
   async _fetchVersion(url)
@@ -43,11 +46,13 @@ class VersionManager
     };
   }
 
-  async createMultiSlugNotif(slugs, host, path)
+  async createMultiSlugNotif(token, slugs, host, path)
   {
-    if (!slugs || !slugs.length) {
-      throw new Error('slugs must be an array');
+    if (!slugs || !slugs.length || !token) {
+      throw new Error('token and slugs required (slugs must be an array)');
     }
+
+    await this._clientManager.update(token, slugs);
 
     host = host || this._host;
     path = path || this._versionPath;
@@ -71,11 +76,22 @@ class VersionManager
     };
   }
 
-  async createSlugNotif(slug, host, path)
+  async createSlugNotif(token, slug, host, path)
   {
     slug = slug || this._server;
     host = host || this._host;
     path = path || this._versionPath;
+
+    if (!token) {
+      throw new Error('Missing param token (required)');
+    }
+
+    if (slug === 'all') {
+      const slugs = this._clientManager.getSlugs(token);
+      return await this.createMultiSlugNotif(token, slugs, host, path);
+    }
+
+    await this._clientManager.update(token, [ slug ]);
 
     const url = `https://${slug}.${host}/${path}`;
     const { version, sinceTime, buildDate } = await this._getVersionInfo(url);
