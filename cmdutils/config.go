@@ -5,7 +5,14 @@ import (
 )
 
 var configDefaults = map[string]string{
+	// server
 	"APP_PORT": "7447",
+
+	// db
+	"DB_HOST":   "db",
+	"DB_DBNAME": "dev",
+	"DB_USER":   "dev",
+	"DB_PW":     "dev",
 }
 
 // Config is the store for config data
@@ -27,6 +34,11 @@ func NewConfig() Config {
 
 }
 
+/*
+
+	Set a value in the config store
+
+*/
 func (c *Config) set(key, val, fallback string) {
 
 	if len(val) == 0 {
