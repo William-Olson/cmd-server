@@ -10,7 +10,10 @@ RUN mkdir -p /go/src/github.com/william-olson/cmd-server
 
 COPY . /go/src/github.com/william-olson/cmd-server/
 
-RUN go-wrapper install github.com/william-olson/cmd-server
+RUN go-wrapper install github.com/william-olson/cmd-server/cmddeps && \
+    go-wrapper install github.com/william-olson/cmd-server/cmdutils && \
+    go-wrapper install github.com/william-olson/cmd-server/cmdserver && \
+    go-wrapper install github.com/william-olson/cmd-server
 
 
 
