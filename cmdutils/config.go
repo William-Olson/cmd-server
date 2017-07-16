@@ -8,6 +8,11 @@ var configDefaults = map[string]string{
 	// server
 	"APP_PORT": "7447",
 
+	// version route
+	"VERSION_HOST":   "wko.io",
+	"VERSION_ROUTE":  "version",
+	"VERSION_SERVER": "knex",
+
 	// db
 	"DB_HOST":   "db",
 	"DB_DBNAME": "dev",

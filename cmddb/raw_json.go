@@ -6,17 +6,17 @@ import (
 	"errors"
 )
 
-//JSONRaw ...
+// JSONRaw is a custom type for JSONB fields in db
 type JSONRaw json.RawMessage
 
-//Value ...
+// Value converts json to driver.Value
 func (j JSONRaw) Value() (driver.Value, error) {
 	byteArr := []byte(j)
 
 	return driver.Value(byteArr), nil
 }
 
-//Scan ...
+// Scan allows scanning of JSON data
 func (j *JSONRaw) Scan(src interface{}) error {
 	asBytes, ok := src.([]byte)
 	if !ok {
@@ -33,7 +33,7 @@ func (j *JSONRaw) Scan(src interface{}) error {
 	return nil
 }
 
-//MarshalJSON ...
+// MarshalJSON converts json to byte slice
 func (j *JSONRaw) MarshalJSON() ([]byte, error) {
 	if j == nil {
 		return []byte(nil), nil
@@ -41,7 +41,7 @@ func (j *JSONRaw) MarshalJSON() ([]byte, error) {
 	return *j, nil
 }
 
-//UnmarshalJSON ...
+// UnmarshalJSON converts byte slice to json
 func (j *JSONRaw) UnmarshalJSON(data []byte) error {
 	if j == nil {
 		return errors.New("json.RawMessage: UnmarshalJSON on nil pointer")
