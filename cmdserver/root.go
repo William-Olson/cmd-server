@@ -46,7 +46,7 @@ func (r rootRoutes) getRoot(c echo.Context) error {
 func (r rootRoutes) getClients(c echo.Context) error {
 
 	db := r.deps.Get("db").(*cmddb.DB)
-	clients, err := db.GetSlackClients()
+	clients, err := db.GetSlackClientsOrErr()
 
 	if err != nil {
 		fmt.Printf("%v\n", err)
@@ -67,6 +67,7 @@ func (r rootRoutes) getVersion(c echo.Context) error {
 	resp := cmdversions.GetDefault(r.deps)
 
 	return c.JSON(200, resp)
+
 }
 
 /*

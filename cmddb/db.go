@@ -32,7 +32,7 @@ func (db *DB) Connect() {
 		panic("could not connect to db")
 	}
 
-	// sync the slack_clients table
+	// sync the slack_clients tables
 	db.CreateSlackClientsTable()
 
 }

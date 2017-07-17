@@ -17,6 +17,7 @@ type SlackClient struct {
 	slugs       []SlackSlug
 }
 
+// SlackSlug is the model definition for slack_slugs table entries
 type SlackSlug struct {
 	ID            int       `db:"id" json:"id"`
 	SlackClientID int       `db:"slack_client_id" json:"slack_client_id"`
@@ -25,8 +26,8 @@ type SlackSlug struct {
 	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 }
 
-// GetSlackClients retrieves all the slack_clients from db
-func (db *DB) GetSlackClients() ([]SlackClient, error) {
+// GetSlackClientsOrErr retrieves all the slack_clients from db
+func (db *DB) GetSlackClientsOrErr() ([]SlackClient, error) {
 
 	var clients []SlackClient
 
@@ -98,6 +99,7 @@ func (s *SlackClient) GetSlugs() []SlackSlug {
 
 }
 
+// CreateSlackSlugOrErr inserts a new slack_slug into the db
 func (db *DB) CreateSlackSlugOrErr(newEntry SlackSlug) error {
 
 	createTime := time.Now()
