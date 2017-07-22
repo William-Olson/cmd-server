@@ -1,10 +1,13 @@
 package cmdversions
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/william-olson/cmd-server/cmddb"
 	"github.com/william-olson/cmd-server/cmddeps"
 	"github.com/william-olson/cmd-server/cmdutils"
+	"io/ioutil"
+	"net/http"
 )
 
 type client struct {
@@ -13,9 +16,10 @@ type client struct {
 	path   string
 }
 
-type version struct {
-	version   string
-	timestamp string
+type Version struct {
+	Version   string `json:"version"`
+	Timestamp string `json:"timestamp"`
+	Err       error  `json:"-"`
 }
 
 const (
@@ -40,14 +44,14 @@ func GetDefault(deps *cmddeps.Deps) cmdutils.SlackResponse {
 	return cmdutils.SlackResponse{
 		// show to everyone in channel
 		ResponseType: inChannelResponse,
-		Text:         fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.version),
+		Text:         fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version),
 
 		// display build info as attachment
 		Attachments: []cmdutils.SlackAttachment{
 			cmdutils.SlackAttachment{
 				Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
 				TitleLink: fmt.Sprintf("http://%s.%s", cl.server, cl.host),
-				Text:      fmt.Sprintf("Build Date: %s", v.timestamp),
+				Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
 			},
 		},
 	}
@@ -59,15 +63,52 @@ func GetDefault(deps *cmddeps.Deps) cmdutils.SlackResponse {
 	Fetches the version and timestamp from a given url
 
 */
-func fetchVersion(url string) version {
+func fetchVersion(url string) Version {
 
 	fmt.Printf("fetching version from: %v\n", url)
 
 	// just return dummy version for now
-	return version{
-		version:   "3.0",
-		timestamp: "017-06-16T04:57:40.439Z",
+	return Version{
+		Version:   "3.0",
+		Timestamp: "017-06-16T04:57:40.439Z",
+		Err:       nil,
 	}
+
+}
+
+/*
+
+	Fetch the version and return it via channel
+
+*/
+func chFetch(url string, ch chan<- Version) {
+
+	dat := Version{}
+	resp, err := http.Get(url)
+
+	if err != nil {
+		dat.Err = err
+		ch <- dat
+		return
+	}
+
+	bt, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		dat.Err = err
+		ch <- dat
+		return
+	}
+
+	if err = json.Unmarshal(bt, &dat); err != nil {
+		dat.Err = err
+		ch <- dat
+		return
+	}
+
+	fmt.Println("resp", dat)
+
+	ch <- dat
 
 }
 
@@ -105,12 +146,12 @@ func GetSlugVersionOrErr(db *cmddb.DB, slackClient cmddb.SlackClient, slug strin
 
 	payload := cmdutils.SlackResponse{
 		ResponseType: inChannelResponse,
-		Text:         fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.version),
+		Text:         fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version),
 		Attachments: []cmdutils.SlackAttachment{
 			cmdutils.SlackAttachment{
 				Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
 				TitleLink: fmt.Sprintf("http://%s.%s", cl.server, cl.host),
-				Text:      fmt.Sprintf("Build Date: %s", v.timestamp),
+				Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
 			},
 		},
 	}
