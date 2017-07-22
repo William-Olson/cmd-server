@@ -26,10 +26,11 @@ const (
 	inChannelResponse = "in_channel"
 )
 
-// GetDefault fetches the version based on environment variables
-func GetDefault(deps *cmddeps.Deps) cmdutils.SlackResponse {
+// GetDefaultOrErr fetches the version based on environment variables
+func GetDefaultOrErr(deps *cmddeps.Deps) (cmdutils.SlackResponse, error) {
 
 	// get client info
+	rsp := cmdutils.SlackResponse{}
 	config := deps.Get("config").(*cmdutils.Config)
 	cl := getEnvClientInfo(config)
 
@@ -37,24 +38,25 @@ func GetDefault(deps *cmddeps.Deps) cmdutils.SlackResponse {
 	url := fmt.Sprintf("http://%s.%s/%s", cl.server, cl.host, cl.path)
 	v := fetchVersion(url)
 
+	if v.Err != nil {
+		return rsp, v.Err
+	}
+
 	// TODO:
 	//  format v.timestamp for displaying proper build date
 	//  capitalize cl.server string for SlackResponse.Text
 
-	return cmdutils.SlackResponse{
-		// show to everyone in channel
-		ResponseType: inChannelResponse,
-		Text:         fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version),
-
-		// display build info as attachment
-		Attachments: []cmdutils.SlackAttachment{
-			cmdutils.SlackAttachment{
-				Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
-				TitleLink: fmt.Sprintf("http://%s.%s", cl.server, cl.host),
-				Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
-			},
+	rsp.ResponseType = inChannelResponse
+	rsp.Text = fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version)
+	rsp.Attachments = []cmdutils.SlackAttachment{
+		cmdutils.SlackAttachment{
+			Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
+			TitleLink: fmt.Sprintf("http://%s.%s", cl.server, cl.host),
+			Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
 		},
 	}
+
+	return rsp, nil
 
 }
 
@@ -63,16 +65,25 @@ func GetDefault(deps *cmddeps.Deps) cmdutils.SlackResponse {
 	Fetches the version and timestamp from a given url
 
 */
-func fetchVersion(url string) Version {
+func fetchVersion(url string) *Version {
 
 	fmt.Printf("fetching version from: %v\n", url)
 
-	// just return dummy version for now
-	return Version{
-		Version:   "3.0",
-		Timestamp: "017-06-16T04:57:40.439Z",
-		Err:       nil,
+	v := Version{}
+	resp, err := http.Get(url)
+
+	if v.Err = err; v.Err != nil {
+		return &v
 	}
+
+	bt, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if v.Err = err; v.Err != nil {
+		return &v
+	}
+
+	v.Err = json.Unmarshal(bt, &v)
+	return &v
 
 }
 
@@ -136,25 +147,28 @@ func GetSlugVersionOrErr(db *cmddb.DB, slackClient cmddb.SlackClient, slug strin
 		server: slug,
 	}
 
+	payload := cmdutils.SlackResponse{}
+	payload.ResponseType = inChannelResponse
+	payload.Attachments = []cmdutils.SlackAttachment{}
+
 	// construct the fetch url and fetch the version
 	url := fmt.Sprintf("http://%s.%s/%s", cl.server, cl.host, cl.path)
 	v := fetchVersion(url)
+
+	if v.Err != nil {
+		return payload, v.Err
+	}
 
 	// TODO:
 	//  format v.timestamp for displaying proper build date
 	//  capitalize cl.server string for SlackResponse.Text
 
-	payload := cmdutils.SlackResponse{
-		ResponseType: inChannelResponse,
-		Text:         fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version),
-		Attachments: []cmdutils.SlackAttachment{
-			cmdutils.SlackAttachment{
-				Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
-				TitleLink: fmt.Sprintf("http://%s.%s", cl.server, cl.host),
-				Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
-			},
-		},
-	}
+	payload.Text = fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version)
+	payload.Attachments = append(payload.Attachments, cmdutils.SlackAttachment{
+		Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
+		TitleLink: fmt.Sprintf("http://%s.%s", cl.server, cl.host),
+		Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
+	})
 
 	// check if slug is already in db
 	slugExists := false

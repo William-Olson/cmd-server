@@ -64,7 +64,12 @@ func (r rootRoutes) getClients(c echo.Context) error {
 */
 func (r rootRoutes) getVersion(c echo.Context) error {
 
-	resp := cmdversions.GetDefault(r.deps)
+	resp, err := cmdversions.GetDefaultOrErr(r.deps)
+
+	if err != nil {
+		fmt.Println(err)
+		return c.String(500, "Error")
+	}
 
 	return c.JSON(200, resp)
 
