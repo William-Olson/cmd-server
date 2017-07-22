@@ -47,22 +47,22 @@ func (db *DB) CreateSlackClientsTable() {
 	fmt.Println("Attempting sync with slack_clients & slack_slugs")
 	clientQuery := `
 		CREATE TABLE IF NOT EXISTS "slack_clients" (
-			"id"					 SERIAL PRIMARY KEY,
-			"token"				 TEXT UNIQUE NOT NULL,
-			"host"				 TEXT NOT NULL,
+			"id"           SERIAL PRIMARY KEY,
+			"token"        TEXT UNIQUE NOT NULL,
+			"host"         TEXT NOT NULL,
 			"version_path" TEXT,
-			"name"				 TEXT,
-			"created_at"	 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			"updated_at"	 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+			"name"         TEXT,
+			"created_at"   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			"updated_at"   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 		);`
 
 	slugQuery := `
 		CREATE TABLE IF NOT EXISTS "slack_slugs" (
-			"id"							 SERIAL PRIMARY KEY,
-			"slack_client_id"	 SERIAL NOT NULL,
-			"name"						 TEXT NOT NULL,
-			"created_at"			 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			"updated_at"			 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+			"id"               SERIAL PRIMARY KEY,
+			"slack_client_id"  SERIAL NOT NULL,
+			"name"             TEXT NOT NULL,
+			"created_at"       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			"updated_at"       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 		);`
 
 	db.Sesh.Query(clientQuery)
