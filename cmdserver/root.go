@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"github.com/william-olson/cmd-server/cmddb"
+	"github.com/william-olson/cmd-server/cmdutils"
 	"github.com/william-olson/cmd-server/cmdversions"
 )
 
@@ -86,31 +87,52 @@ func (r rootRoutes) getVersion(c echo.Context) error {
 */
 func (r rootRoutes) getSlugs(c echo.Context) error {
 
-	slug := "all"
 	db := r.deps.Get("db").(*cmddb.DB)
 
 	// extract the token and text args
 	token := c.FormValue("token")
 	text := c.FormValue("text")
 
-	if len(text) != 0 {
-		slug = text
-	}
-
 	// fetch the slack_client from db
 	slackClient, err := db.GetSlackClientByTokenOrErr(token)
 
 	if err != nil {
-		c.JSON(400, map[string]string{"error": "Bad Token"})
+		return c.JSON(400, map[string]string{"error": "Bad Token"})
 	}
 
-	// TODO:
-	//  check if slash command arguments contain multiple slugs
+	// check for multiple slug arguments
+	slugs := cmdutils.SplitBySpaces(text)
 
-	resp, slugErr := cmdversions.GetSlugVersionOrErr(db, slackClient, slug)
+	// handle empty and all case
+	if len(slugs) == 0 || slugs[0] == "all" || slugs[0] == "" {
+		slugs = []string{}
+		for _, slg := range slackClient.GetSlugs() {
+			slugs = append(slugs, slg.Name)
+		}
+	}
 
-	if slugErr != nil {
-		c.JSON(500, map[string]string{"error": "Version fetching problem"})
+	// ensure at least 1 will be requested
+	if len(slugs) == 0 {
+		return c.JSON(400, map[string]string{"error": "No slugs found"})
+	}
+
+	// handle single slug
+	if len(slugs) == 1 {
+		resp, slugErr := cmdversions.GetSlugVersionOrErr(db, slackClient, slugs[0])
+
+		if slugErr != nil {
+			return c.JSON(500, map[string]string{"error": "Version fetching problem"})
+		}
+
+		return c.JSON(200, resp)
+	}
+
+	// otherwise handle the multi-slugs
+	resp, multiErr := cmdversions.GetMultiSlugVersionsOrErr(db, slackClient, slugs)
+
+	if multiErr != nil {
+		fmt.Println(multiErr)
+		return c.JSON(500, map[string]string{"error": "Version fetching problem"})
 	}
 
 	return c.JSON(200, resp)

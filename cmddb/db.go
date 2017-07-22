@@ -73,6 +73,7 @@ func (db *DB) connect() try.Func {
 		return shouldRetry, err
 
 	}
+
 }
 
 /*
