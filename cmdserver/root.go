@@ -82,11 +82,14 @@ func (r rootRoutes) getSlugs(c echo.Context) error {
 		Text  string `json:"text"`
 		Cmd   string `json:"command"`
 	}
-	body := CommandReq{}
 
-	bodyErr := c.Bind(&body)
-	if bodyErr != nil {
-		return c.JSON(400, map[string](interface{}){"error": bodyErr})
+	body := CommandReq{}
+	c.Bind(&body)
+
+	if len(body.Token) == 0 {
+		body.Token = c.FormValue("token")
+		body.Text = c.FormValue("text")
+		body.Cmd = c.FormValue("command")
 	}
 
 	db := r.deps.Get("db").(*cmddb.DB)

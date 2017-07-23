@@ -144,7 +144,7 @@ func GetMultiSlugVersionsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slugs []strin
 		date := cmdutils.BuildDate(v.Timestamp)
 
 		payload.Attachments = append(payload.Attachments, cmdutils.SlackAttachment{
-			Title:     fmt.Sprintf("%s is running version %s", title(slg), v.Version),
+			Title:     fmt.Sprintf("%s is running %s", title(slg), v.Version),
 			TitleLink: fmt.Sprintf("http://%s.%s", slg, sc.Host),
 			Text:      fmt.Sprintf("Build Date: %s (%s)", date, lapsed),
 		})
