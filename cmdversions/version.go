@@ -41,9 +41,8 @@ func GetDefaultOrErr(deps *cmddeps.Deps) (cmdutils.SlackResponse, error) {
 		return rsp, v.Err
 	}
 
-	// TODO:
-	//  format v.Timestamp for displaying proper build date
-	//  capitalize cl.server string for SlackResponse.Text
+	lapsed := cmdutils.Lapsed(v.Timestamp)
+	date := cmdutils.BuildDate(v.Timestamp)
 
 	rsp.ResponseType = inChannelResponse
 	rsp.Text = fmt.Sprintf("_*%s*_ is running version *%s*", title(server), v.Version)
@@ -51,7 +50,7 @@ func GetDefaultOrErr(deps *cmddeps.Deps) (cmdutils.SlackResponse, error) {
 		cmdutils.SlackAttachment{
 			Title:     fmt.Sprintf("%s.%s", server, host),
 			TitleLink: fmt.Sprintf("http://%s.%s", server, host),
-			Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
+			Text:      fmt.Sprintf("Build Date: %s (%s)", date, lapsed),
 		},
 	}
 
@@ -71,11 +70,14 @@ func GetVersionByUrlOrErr(url string) (cmdutils.SlackResponse, error) {
 		return rsp, v.Err
 	}
 
+	lapsed := cmdutils.Lapsed(v.Timestamp)
+	date := cmdutils.BuildDate(v.Timestamp)
+
 	rsp.Text = fmt.Sprintf("_*%s*_ is running version *%s*", url, v.Version)
 	rsp.Attachments = append(rsp.Attachments, cmdutils.SlackAttachment{
 		Title:     url,
 		TitleLink: url,
-		Text:      "Build Date: " + v.Timestamp,
+		Text:      fmt.Sprintf("Build Date: %s (%s)", date, lapsed),
 	})
 
 	return rsp, nil
@@ -97,15 +99,14 @@ func GetSlugVersionOrErr(db *cmddb.DB, sc cmddb.SlackClient, slug string) (cmdut
 		return payload, v.Err
 	}
 
-	// TODO:
-	//  format v.Timestamp for displaying proper build date
-	//  capitalize cl.server string for SlackResponse.Text
+	lapsed := cmdutils.Lapsed(v.Timestamp)
+	date := cmdutils.BuildDate(v.Timestamp)
 
 	payload.Text = fmt.Sprintf("_*%s*_ is running version *%s*", title(slug), v.Version)
 	payload.Attachments = append(payload.Attachments, cmdutils.SlackAttachment{
 		Title:     fmt.Sprintf("%s.%s", slug, sc.Host),
 		TitleLink: fmt.Sprintf("http://%s.%s", slug, sc.Host),
-		Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
+		Text:      fmt.Sprintf("Build Date: %s (%s)", date, lapsed),
 	})
 
 	// update slug
@@ -139,14 +140,13 @@ func GetMultiSlugVersionsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slugs []strin
 			return payload, v.Err
 		}
 
-		// TODO:
-		//  format v.Timestamp for displaying proper build date
-		//  capitalize cl.server string for SlackResponse.Text
+		lapsed := cmdutils.Lapsed(v.Timestamp)
+		date := cmdutils.BuildDate(v.Timestamp)
 
 		payload.Attachments = append(payload.Attachments, cmdutils.SlackAttachment{
 			Title:     fmt.Sprintf("%s is running version %s", title(slg), v.Version),
 			TitleLink: fmt.Sprintf("http://%s.%s", slg, sc.Host),
-			Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
+			Text:      fmt.Sprintf("Build Date: %s (%s)", date, lapsed),
 		})
 
 		// update slug for client
