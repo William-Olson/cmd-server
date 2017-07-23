@@ -60,10 +60,20 @@ func (r rootRoutes) getClients(c echo.Context) error {
 
 /*
 
-	Fetch the version for the default server
+	Fetch the version for the default server or a query url
 
 */
 func (r rootRoutes) getVersion(c echo.Context) error {
+
+	url := c.QueryParam("q")
+
+	if len(url) > 0 {
+		resp, err := cmdversions.GetVersionByUrlOrErr(url)
+		if err != nil {
+			return c.String(500, "Error")
+		}
+		return c.JSON(200, resp)
+	}
 
 	resp, err := cmdversions.GetDefaultOrErr(r.deps)
 
@@ -87,21 +97,29 @@ func (r rootRoutes) getVersion(c echo.Context) error {
 */
 func (r rootRoutes) getSlugs(c echo.Context) error {
 
+	type CommandReq struct {
+		Token string `json:"token"`
+		Text  string `json:"text"`
+		Cmd   string `json:"command"`
+	}
+	body := CommandReq{}
+
+	bodyErr := c.Bind(&body)
+	if bodyErr != nil {
+		return c.JSON(400, map[string](interface{}){"error": bodyErr})
+	}
+
 	db := r.deps.Get("db").(*cmddb.DB)
 
-	// extract the token and text args
-	token := c.FormValue("token")
-	text := c.FormValue("text")
-
 	// fetch the slack_client from db
-	slackClient, err := db.GetSlackClientByTokenOrErr(token)
+	slackClient, err := db.GetSlackClientByTokenOrErr(body.Token)
 
 	if err != nil {
 		return c.JSON(400, map[string]string{"error": "Bad Token"})
 	}
 
 	// check for multiple slug arguments
-	slugs := cmdutils.SplitBySpaces(text)
+	slugs := cmdutils.SplitBySpaces(body.Text)
 
 	// handle empty and all case
 	if len(slugs) == 0 || slugs[0] == "all" || slugs[0] == "" {

@@ -8,6 +8,7 @@ import (
 	"github.com/william-olson/cmd-server/cmdutils"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 type client struct {
@@ -47,7 +48,7 @@ func GetDefaultOrErr(deps *cmddeps.Deps) (cmdutils.SlackResponse, error) {
 	//  capitalize cl.server string for SlackResponse.Text
 
 	rsp.ResponseType = inChannelResponse
-	rsp.Text = fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version)
+	rsp.Text = fmt.Sprintf("_*%s*_ is running version *%s*", title(cl.server), v.Version)
 	rsp.Attachments = []cmdutils.SlackAttachment{
 		cmdutils.SlackAttachment{
 			Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
@@ -60,14 +61,35 @@ func GetDefaultOrErr(deps *cmddeps.Deps) (cmdutils.SlackResponse, error) {
 
 }
 
+// GetVersionByUrlOrErr fetches a version from a given url
+func GetVersionByUrlOrErr(url string) (cmdutils.SlackResponse, error) {
+
+	rsp := cmdutils.SlackResponse{}
+	rsp.ResponseType = inChannelResponse
+	rsp.Attachments = []cmdutils.SlackAttachment{}
+	v := fetchVersion(url)
+
+	if v.Err != nil {
+		return rsp, v.Err
+	}
+
+	rsp.Text = fmt.Sprintf("_*%s*_ is running version *%s*", url, v.Version)
+	rsp.Attachments = append(rsp.Attachments, cmdutils.SlackAttachment{
+		Title:     url,
+		TitleLink: url,
+		Text:      "Build Date: " + v.Timestamp,
+	})
+
+	return rsp, nil
+
+}
+
 /*
 
 	Fetches the version and timestamp from a given url
 
 */
 func fetchVersion(url string) *Version {
-
-	fmt.Printf("fetching version from: %v\n", url)
 
 	v := Version{}
 	resp, err := http.Get(url)
@@ -117,8 +139,6 @@ func chFetch(url string, ch chan<- Version) {
 		return
 	}
 
-	fmt.Println("resp", dat)
-
 	ch <- dat
 
 }
@@ -163,7 +183,7 @@ func GetSlugVersionOrErr(db *cmddb.DB, slackClient cmddb.SlackClient, slug strin
 	//  format v.Timestamp for displaying proper build date
 	//  capitalize cl.server string for SlackResponse.Text
 
-	payload.Text = fmt.Sprintf("_*%s*_ is running version *%s*", cl.server, v.Version)
+	payload.Text = fmt.Sprintf("_*%s*_ is running version *%s*", title(cl.server), v.Version)
 	payload.Attachments = append(payload.Attachments, cmdutils.SlackAttachment{
 		Title:     fmt.Sprintf("%s.%s", cl.server, cl.host),
 		TitleLink: fmt.Sprintf("http://%s.%s", cl.server, cl.host),
@@ -177,7 +197,7 @@ func GetSlugVersionOrErr(db *cmddb.DB, slackClient cmddb.SlackClient, slug strin
 
 }
 
-// GetMultiSlugVersionsOrErr
+// GetMultiSlugVersionsOrErr fetches a version for each slug in slugs slice
 func GetMultiSlugVersionsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slugs []string) (cmdutils.SlackResponse, error) {
 
 	ch := make(chan Version)
@@ -206,7 +226,7 @@ func GetMultiSlugVersionsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slugs []strin
 		//  capitalize cl.server string for SlackResponse.Text
 
 		payload.Attachments = append(payload.Attachments, cmdutils.SlackAttachment{
-			Title:     fmt.Sprintf("%s is running version %s", slg, v.Version),
+			Title:     fmt.Sprintf("%s is running version %s", title(slg), v.Version),
 			TitleLink: fmt.Sprintf("http://%s.%s", slg, sc.Host),
 			Text:      fmt.Sprintf("Build Date: %s", v.Timestamp),
 		})
@@ -244,7 +264,7 @@ func updateSlugsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slug string) error {
 		}
 
 		// insert the new slug in db
-		fmt.Printf("Creating new slack_slugs entry: %v\n", newEntry)
+		fmt.Printf("New slack_slugs entry: (%v) - %v\n", sc.Name, slug)
 		err := db.CreateSlackSlugOrErr(newEntry)
 		if err != nil {
 			return err
@@ -255,5 +275,16 @@ func updateSlugsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slug string) error {
 	//  update slug "updated_at" time if exists
 
 	return nil
+
+}
+
+/*
+
+	Titlize a string
+
+*/
+func title(s string) string {
+
+	return strings.Title(s)
 
 }
