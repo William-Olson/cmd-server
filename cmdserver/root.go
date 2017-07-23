@@ -21,7 +21,7 @@ func (r rootRoutes) mount() {
 
 	r.group.GET("/", r.getRoot)
 	r.group.GET("/clients", r.getClients)
-	r.group.GET("/version", r.getVersion)
+	r.group.GET("/url-version", r.getVersion)
 	r.group.POST("/slug-version", r.getSlugs)
 
 }
