@@ -8,7 +8,7 @@ import (
 // SlackClient is the slack_clients db model definition
 type SlackClient struct {
 	ID          int       `db:"id" json:"id"`
-	Token       string    `db:"token" json:"token"`
+	Token       string    `db:"token" json:"-"`
 	Host        string    `db:"host" json:"host"`
 	VersionPath string    `db:"version_path" json:"version_path"`
 	Name        string    `db:"name" json:"name"`

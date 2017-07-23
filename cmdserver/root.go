@@ -20,7 +20,6 @@ type rootRoutes struct {
 func (r rootRoutes) mount() {
 
 	r.group.GET("/", r.getRoot)
-	r.group.GET("/clients", r.getClients)
 	r.group.GET("/url-version", r.getVersion)
 	r.group.POST("/slug-version", r.getSlugs)
 
@@ -36,25 +35,6 @@ func (r rootRoutes) getRoot(c echo.Context) error {
 	return c.JSON(200, map[string]bool{
 		"ok": true,
 	})
-
-}
-
-/*
-
-	Test route to view slack_clients
-
-*/
-func (r rootRoutes) getClients(c echo.Context) error {
-
-	db := r.deps.Get("db").(*cmddb.DB)
-	clients, err := db.GetSlackClientsOrErr()
-
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		return c.String(500, "Error")
-	}
-
-	return c.JSON(200, clients)
 
 }
 
