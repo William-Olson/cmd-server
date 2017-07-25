@@ -17,6 +17,7 @@ const (
 
 // Version is a response value returned when fetching versions
 type Version struct {
+	ID        string `json:"-"`
 	Version   string `json:"version"`
 	Timestamp string `json:"timestamp"`
 	Err       error  `json:"-"`
@@ -110,7 +111,11 @@ func GetSlugVersionOrErr(db *cmddb.DB, sc cmddb.SlackClient, slug string) (cmdut
 	})
 
 	// update slug
-	err := updateSlugsOrErr(db, sc, slug)
+	mp := make(map[string]string)
+	for _, s := range sc.GetSlugs() {
+		mp[s.Name] = s.Name
+	}
+	err := updateSlugsOrErr(db, mp, sc.ID, slug)
 
 	return payload, err
 
@@ -121,9 +126,15 @@ func GetMultiSlugVersionsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slugs []strin
 
 	ch := make(chan Version)
 
+	// create a map of existing slugs
+	sm := map[string]string{}
+	for _, s := range sc.GetSlugs() {
+		sm[s.Name] = s.Name
+	}
+
 	// spin off a go routine for each slug fetch
 	for _, slg := range slugs {
-		go chFetch(fmt.Sprintf("http://%s.%s/%s", slg, sc.Host, sc.VersionPath), ch)
+		go chFetch(slg, fmt.Sprintf("http://%s.%s/%s", slg, sc.Host, sc.VersionPath), ch)
 	}
 
 	// create a response struct
@@ -132,25 +143,29 @@ func GetMultiSlugVersionsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slugs []strin
 	payload.Attachments = []cmdutils.SlackAttachment{}
 	payload.Text = fmt.Sprintf("Listing Versions")
 
-	// build up results under Attachments field
-	for _, slg := range slugs {
-		v := <-ch
+	// ensure all versions are read from channel
+	versions := []Version{}
+	for range slugs {
+		versions = append(versions, <-ch)
+	}
 
+	// build up results under Attachments field
+	for _, v := range versions {
 		if v.Err != nil {
 			return payload, v.Err
 		}
 
 		lapsed := cmdutils.Lapsed(v.Timestamp)
 		date := cmdutils.BuildDate(v.Timestamp)
+		server := v.ID
 
 		payload.Attachments = append(payload.Attachments, cmdutils.SlackAttachment{
-			Title:     fmt.Sprintf("%s is running %s", title(slg), v.Version),
-			TitleLink: fmt.Sprintf("http://%s.%s", slg, sc.Host),
+			Title:     fmt.Sprintf("%s is running %s", title(server), v.Version),
+			TitleLink: fmt.Sprintf("http://%s.%s", server, sc.Host),
 			Text:      fmt.Sprintf("Build Date: %s (%s)", date, lapsed),
 		})
 
-		// update slug for client
-		if err := updateSlugsOrErr(db, sc, slg); err != nil {
+		if err := updateSlugsOrErr(db, sm, sc.ID, server); err != nil {
 			return payload, err
 		}
 	}
@@ -189,9 +204,9 @@ func fetchVersion(url string) *Version {
 	Fetch the version and return it via channel
 
 */
-func chFetch(url string, ch chan<- Version) {
+func chFetch(identifier, url string, ch chan<- Version) {
 
-	dat := Version{}
+	dat := Version{ID: identifier}
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -223,33 +238,22 @@ func chFetch(url string, ch chan<- Version) {
 	Attempt updating a slug in db or return error
 
 */
-func updateSlugsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slug string) error {
+func updateSlugsOrErr(db *cmddb.DB, sm map[string]string, scID int, slug string) error {
 
 	// check if slug is already in db
-	slugExists := false
-	for _, slg := range sc.GetSlugs() {
-		if slg.Name == slug {
-			slugExists = true
-		}
+	if sm[slug] == slug {
+		return nil
 	}
 
-	if slugExists == false {
-		// new slug
-		newEntry := cmddb.SlackSlug{
-			SlackClientID: sc.ID,
-			Name:          slug,
-		}
+	// insert the new slug in db
+	err := db.CreateSlackSlugOrErr(cmddb.SlackSlug{
+		SlackClientID: scID,
+		Name:          slug,
+	})
 
-		// insert the new slug in db
-		fmt.Printf("New slack_slugs entry: (%v) - %v\n", sc.Name, slug)
-		err := db.CreateSlackSlugOrErr(newEntry)
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
-
-	// TODO:
-	//  update slug "updated_at" time if exists
 
 	return nil
 
