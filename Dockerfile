@@ -32,6 +32,7 @@ WORKDIR /root/
 RUN apt-get update && apt-get install -y ca-certificates
 
 COPY --from=builder /go/bin/cmd-server ./cmd-server
+COPY ./cmdversions/version.json ./version.json
 
 EXPOSE 7447
 

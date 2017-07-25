@@ -20,6 +20,7 @@ type rootRoutes struct {
 func (r rootRoutes) mount() {
 
 	r.group.GET("/", r.getRoot)
+	r.group.GET("/version", r.getAppVersion)
 	r.group.GET("/url-version", r.getVersion)
 	r.group.POST("/slug-version", r.getSlugs)
 
@@ -35,6 +36,25 @@ func (r rootRoutes) getRoot(c echo.Context) error {
 	return c.JSON(200, map[string]bool{
 		"ok": true,
 	})
+
+}
+
+/*
+
+	Serve the root route
+
+*/
+func (r rootRoutes) getAppVersion(c echo.Context) error {
+
+	v, err := cmdversions.GetAppVersionOrErr()
+
+	if err != nil {
+		fmt.Println("error reading file")
+		fmt.Println(err)
+		return c.String(500, "Error")
+	}
+
+	return c.JSON(200, v)
 
 }
 
