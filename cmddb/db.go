@@ -1,7 +1,6 @@
 package cmddb
 
 import (
-	"fmt"
 	"github.com/william-olson/cmd-server/cmddeps"
 	"github.com/william-olson/cmd-server/cmdutils"
 	"gopkg.in/matryer/try.v1"
@@ -18,18 +17,20 @@ const (
 
 // DB is the database helper and holds the session to db
 type DB struct {
-	Deps *cmddeps.Deps
-	Sesh upper.Database
+	Deps   *cmddeps.Deps
+	Sesh   upper.Database
+	logger cmdutils.Logger
 }
 
 // Connect establishes a connection to the database
 func (db *DB) Connect() {
 
+	db.logger = cmdutils.NewLogger("db")
 	err := try.Do(db.connect())
 
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		panic("could not connect to db")
+		db.logger.Error("could not connect to db")
+		panic(err)
 	}
 
 	// sync the slack_clients tables
@@ -54,7 +55,7 @@ func (db *DB) connect() try.Func {
 		timeout := time.Second * time.Duration(math.Pow(retryFactor, float64(attempt)))
 
 		// connect
-		fmt.Printf("db connection attempt: %v\n", attempt)
+		db.logger.KV("attempt", attempt).Log("connecting to db")
 		sesh, err := postgresql.Open(dbUrl)
 
 		// connect err

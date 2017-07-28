@@ -1,7 +1,6 @@
 package cmddb
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -44,7 +43,7 @@ func (db *DB) GetSlackClientsOrErr() ([]SlackClient, error) {
 // CreateSlackClientsTable syncs the slack_client table
 func (db *DB) CreateSlackClientsTable() {
 
-	fmt.Println("Attempting sync with slack_clients & slack_slugs")
+	db.logger.Log("Attempting sync with slack_clients & slack_slugs")
 	clientQuery := `
 		CREATE TABLE IF NOT EXISTS "slack_clients" (
 			"id"           SERIAL PRIMARY KEY,

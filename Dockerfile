@@ -9,7 +9,8 @@ RUN go-wrapper download -u github.com/labstack/echo/... && \
     go-wrapper download -u upper.io/db.v3 && \
     go-wrapper download -u github.com/lib/pq && \
     go-wrapper download -u gopkg.in/matryer/try.v1 && \
-    go-wrapper download -u github.com/go-shadow/moment
+    go-wrapper download -u github.com/go-shadow/moment &&\
+    go-wrapper download -u github.com/kpango/glg
 
 RUN mkdir -p /go/src/github.com/william-olson/cmd-server
 
