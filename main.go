@@ -11,21 +11,17 @@ func main() {
 
 	deps := cmddeps.NewDeps()
 	logger := cmdutils.NewLogger("app")
-	depsSet := []string{}
 
 	// init and set config
+	logger.KV("dep", "config").Log("registering depedency")
 	config := cmdutils.NewConfig()
 	deps.Set("config", &config)
-	depsSet = append(depsSet, "config")
 
 	// init and set db
+	logger.KV("dep", "db").Log("registering depedency")
 	db := cmddb.DB{Deps: &deps}
 	db.Connect()
 	deps.Set("db", &db)
-	depsSet = append(depsSet, "db")
-
-	// log set dependencies
-	logger.KV("deps", depsSet).Log("registered dependencies")
 
 	// start up the server
 	server := cmdserver.Server{Deps: &deps}

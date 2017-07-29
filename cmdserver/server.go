@@ -17,21 +17,24 @@ type someRoutes interface {
 }
 
 type route struct {
-	group *echo.Group
-	deps  *cmddeps.Deps
+	group  *echo.Group
+	deps   *cmddeps.Deps
+	logger cmdutils.Logger
 }
 
 // Start inits routes and starts the server
 func (s *Server) Start() {
 
 	s.e = echo.New()
+	sLogger := cmdutils.NewLogger("api")
+	rLogger := cmdutils.NewLogger("api:routes")
 	config := s.Deps.Get("config").(*cmdutils.Config)
 
 	rootGroup := s.e.Group("")
 
 	// define base paths
 	routes := []someRoutes{
-		rootRoutes{route{rootGroup, s.Deps}},
+		rootRoutes{route{rootGroup, s.Deps, rLogger}},
 	}
 
 	// wire up sub paths
@@ -39,6 +42,22 @@ func (s *Server) Start() {
 		r.mount()
 	}
 
-	s.e.Logger.Fatal(s.e.Start(":" + config.Get("APP_PORT")))
+	addr := ":"
+	port := config.Get("APP_PORT")
+
+	sLogger.
+		KV("addr", addr).
+		KV("port", port).
+		Log("starting server")
+
+	err := s.e.Start(addr + port)
+
+	if err != nil {
+		sLogger.
+			KV("addr", addr).
+			KV("port", port).
+			KV("err", err).
+			Error("server fatal error")
+	}
 
 }

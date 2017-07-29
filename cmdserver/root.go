@@ -1,7 +1,6 @@
 package cmdserver
 
 import (
-	"fmt"
 	"github.com/labstack/echo"
 	"github.com/william-olson/cmd-server/cmddb"
 	"github.com/william-olson/cmd-server/cmdutils"
@@ -49,8 +48,7 @@ func (r rootRoutes) getAppVersion(c echo.Context) error {
 	v, err := cmdversions.GetAppVersionOrErr()
 
 	if err != nil {
-		fmt.Println("error reading file")
-		fmt.Println(err)
+		r.logger.KV("err", err).Error("error reading file")
 		return c.String(500, "Error")
 	}
 
@@ -78,7 +76,7 @@ func (r rootRoutes) getVersion(c echo.Context) error {
 	resp, err := cmdversions.GetDefaultOrErr(r.deps)
 
 	if err != nil {
-		fmt.Println(err)
+		r.logger.KV("err", err).Error("Failure to fetch default version")
 		return c.String(500, "Error")
 	}
 
@@ -152,7 +150,7 @@ func (r rootRoutes) getSlugs(c echo.Context) error {
 	resp, multiErr := cmdversions.GetMultiSlugVersionsOrErr(db, slackClient, slugs)
 
 	if multiErr != nil {
-		fmt.Println(multiErr)
+		r.logger.KV("err", multiErr).Error("Multiple slug fetch failure")
 		return c.JSON(500, map[string]string{"error": "Version fetching problem"})
 	}
 
