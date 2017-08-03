@@ -56,8 +56,8 @@ func (s *Server) Start() {
 		sLogger.
 			KV("addr", addr).
 			KV("port", port).
-			KV("err", err).
-			Error("server fatal error")
+			KV("err", "server fatal error").
+			Fatal(err)
 	}
 
 }

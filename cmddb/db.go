@@ -29,8 +29,9 @@ func (db *DB) Connect() {
 	err := try.Do(db.connect())
 
 	if err != nil {
-		db.logger.Error("could not connect to db")
-		panic(err)
+		db.logger.
+			KV("err", "failed to connect to db").
+			Fatal(err)
 	}
 
 	// sync the slack_clients tables

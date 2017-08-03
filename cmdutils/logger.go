@@ -3,6 +3,7 @@ package cmdutils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/getsentry/raven-go"
 	"github.com/kpango/glg"
 )
 
@@ -24,13 +25,26 @@ var (
 	LN_FMT = "%-35s %s"
 
 	lastUsedColor = 0
+
+	sentry = false
 )
+
+type tagMap map[string]string
+type dataMap map[string]interface{}
 
 // Logger is the logging interface
 type Logger interface {
+	EnableAggregation(string)
 	KV(string, interface{}) Logger
+	Tag(string, string)
 	Log(string) Logger
-	Error(string) Logger
+	Error(error) Logger
+	Fatal(error)
+}
+
+type LogMeta struct {
+	Tags tagMap  `json:"-"`
+	Data dataMap `json:"data"`
 }
 
 /*
@@ -41,12 +55,33 @@ type Logger interface {
 type logger struct {
 	glg    *glg.Glg
 	scope  string
-	buffer map[string]interface{}
+	buffer LogMeta
+}
+
+// NewLogger returns a new Logger interface
+func NewLogger(scope string) Logger {
+
+	g := glg.New()
+
+	l := logger{
+		glg:    g,
+		scope:  scope,
+		buffer: LogMeta{Tags: make(tagMap), Data: make(dataMap)},
+	}
+
+	l.setScopeLevels()
+	return &l
+
 }
 
 // Error prints an error to stderr
-func (lg *logger) Error(s string) Logger {
+func (lg *logger) Error(err error) Logger {
 
+	if sentry {
+		raven.CaptureError(err, lg.buffer.Tags)
+	}
+
+	s := err.Error()
 	fields := lg.checkBuffer()
 	if len(lg.scope) > 0 {
 		lg.glg.CustomLogf(lg.scope+ERR_EXT, LN_FMT, s, fields)
@@ -60,6 +95,10 @@ func (lg *logger) Error(s string) Logger {
 
 // Log prints a string to log output
 func (lg *logger) Log(s string) Logger {
+
+	if sentry {
+		raven.Capture(lg.packet(s), lg.buffer.Tags)
+	}
 
 	fields := lg.checkBuffer()
 	if len(lg.scope) > 0 {
@@ -75,8 +114,46 @@ func (lg *logger) Log(s string) Logger {
 // KV attaches a key value pair to a log statement
 func (lg *logger) KV(k string, v interface{}) Logger {
 
-	lg.buffer[k] = v
+	lg.buffer.Data[k] = v
 	return lg
+
+}
+
+// Tag adds a log tag to be sent to sentry
+func (lg *logger) Tag(k, v string) {
+
+	lg.buffer.Tags[k] = v
+
+}
+
+// Fatal logs err and kills the process
+func (lg *logger) Fatal(err error) {
+
+	if sentry {
+		raven.CapturePanicAndWait(func() {
+			panic(err)
+		}, lg.buffer.Tags)
+	}
+
+	fields := lg.checkBuffer()
+	lg.glg.Fatalf(LN_FMT, err.Error(), fields)
+
+}
+
+// EnableAggregation will send logs to sentry
+func (lg *logger) EnableAggregation(tokenAndProject string) {
+
+	info := SplitBySpaces(tokenAndProject)
+	if len(info) < 2 {
+		lg.Fatal(fmt.Errorf("Bad Sentry Data"))
+	}
+
+	err := raven.SetDSN(sentryUrl(info[0], info[1]))
+	if err != nil {
+		lg.Fatal(err)
+	}
+
+	sentry = true
 
 }
 
@@ -87,15 +164,16 @@ func (lg *logger) KV(k string, v interface{}) Logger {
 */
 func (lg *logger) checkBuffer() string {
 
-	if len(lg.buffer) > 0 {
-		jsn, err := json.Marshal(lg.buffer)
-		lg.buffer = make(map[string]interface{})
+	if len(lg.buffer.Data) > 0 {
+		jsn, err := json.Marshal(lg.buffer.Data)
+		lg.buffer.Data = make(dataMap)
 		if err != nil {
 			return fmt.Sprintf("formatErr: %v", err)
 		}
 		return string(jsn)
 	}
 
+	lg.buffer.Tags = make(tagMap)
 	return ""
 
 }
@@ -134,18 +212,31 @@ func (lg *logger) nextColor() func(string) string {
 
 }
 
-// NewLogger returns a new Logger interface
-func NewLogger(scope string) Logger {
+/*
 
-	g := glg.New()
+	Create a sentry connect url
 
-	l := logger{
-		glg:    g,
-		scope:  scope,
-		buffer: make(map[string](interface{})),
+*/
+func sentryUrl(tk, project string) string {
+
+	return "https://" + tk + "@sentry.io/" + project
+
+}
+
+/*
+
+	Get a new packet for sending info logs to sentry
+
+*/
+func (lg *logger) packet(s string) *raven.Packet {
+
+	p := raven.NewPacket(s)
+	for k, v := range lg.buffer.Data {
+		p.Extra[k] = v
 	}
+	p.Level = raven.INFO
+	p.Logger = lg.scope
 
-	l.setScopeLevels()
-	return &l
+	return p
 
 }

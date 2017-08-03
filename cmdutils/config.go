@@ -13,6 +13,10 @@ var configDefaults = map[string]string{
 	"VERSION_ROUTE":  "version",
 	"VERSION_SERVER": "knex",
 
+	// logger
+	"SENTRY_TK":  "",
+	"SENTRY_PRJ": "",
+
 	// db
 	"DB_HOST":   "db",
 	"DB_DBNAME": "dev",

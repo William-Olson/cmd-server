@@ -48,7 +48,7 @@ func (r rootRoutes) getAppVersion(c echo.Context) error {
 	v, err := cmdversions.GetAppVersionOrErr()
 
 	if err != nil {
-		r.logger.KV("err", err).Error("error reading file")
+		r.logger.KV("err", "error reading file").Error(err)
 		return c.String(500, "Error")
 	}
 
@@ -68,6 +68,7 @@ func (r rootRoutes) getVersion(c echo.Context) error {
 	if len(url) > 0 {
 		resp, err := cmdversions.GetVersionByUrlOrErr(url)
 		if err != nil {
+			r.logger.KV("err", "could not fetch version by url").Error(err)
 			return c.String(500, "Error")
 		}
 		return c.JSON(200, resp)
@@ -76,7 +77,7 @@ func (r rootRoutes) getVersion(c echo.Context) error {
 	resp, err := cmdversions.GetDefaultOrErr(r.deps)
 
 	if err != nil {
-		r.logger.KV("err", err).Error("Failure to fetch default version")
+		r.logger.KV("err", "Failure to fetch default version").Error(err)
 		return c.String(500, "Error")
 	}
 
@@ -116,10 +117,12 @@ func (r rootRoutes) getSlugs(c echo.Context) error {
 	slackClient, err := db.GetSlackClientByTokenOrErr(body.Token)
 
 	if err != nil {
+		r.logger.KV("err", "Invalid Token").KV("token", body.Token).Error(err)
 		return c.JSON(400, map[string]string{"error": "Bad Token"})
 	}
 
 	// check for multiple slug arguments
+	r.logger.KV("cmd", body.Cmd).KV("args", body.Text).Log("fetching slug version")
 	slugs := cmdutils.SplitBySpaces(body.Text)
 
 	// handle empty and all case
@@ -140,6 +143,7 @@ func (r rootRoutes) getSlugs(c echo.Context) error {
 		resp, slugErr := cmdversions.GetSlugVersionOrErr(db, slackClient, slugs[0])
 
 		if slugErr != nil {
+			r.logger.KV("err", "single slug failure").KV("slug", slugs[0]).Error(slugErr)
 			return c.JSON(500, map[string]string{"error": "Version fetching problem"})
 		}
 
@@ -150,7 +154,7 @@ func (r rootRoutes) getSlugs(c echo.Context) error {
 	resp, multiErr := cmdversions.GetMultiSlugVersionsOrErr(db, slackClient, slugs)
 
 	if multiErr != nil {
-		r.logger.KV("err", multiErr).Error("Multiple slug fetch failure")
+		r.logger.KV("err", "Multiple slug fetch failure").Error(multiErr)
 		return c.JSON(500, map[string]string{"error": "Version fetching problem"})
 	}
 

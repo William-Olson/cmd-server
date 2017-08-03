@@ -10,11 +10,18 @@ import (
 func main() {
 
 	deps := cmddeps.NewDeps()
+	config := cmdutils.NewConfig()
+
+	// setup logger
+	logToken := config.Get("SENTRY_TK")
 	logger := cmdutils.NewLogger("app")
+	if len(logToken) > 0 {
+		logProj := config.Get("SENTRY_PRJ")
+		logger.EnableAggregation(logToken + " " + logProj)
+	}
 
 	// init and set config
 	logger.KV("dep", "config").Log("registering depedency")
-	config := cmdutils.NewConfig()
 	deps.Set("config", &config)
 
 	// init and set db
