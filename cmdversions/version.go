@@ -8,6 +8,7 @@ import (
 	"github.com/william-olson/cmd-server/cmdutils"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -144,13 +145,18 @@ func GetMultiSlugVersionsOrErr(db *cmddb.DB, sc cmddb.SlackClient, slugs []strin
 	payload.Text = fmt.Sprintf("Listing Versions")
 
 	// ensure all versions are read from channel
-	versions := []Version{}
+	versions := map[string]Version{}
 	for range slugs {
-		versions = append(versions, <-ch)
+		v := <-ch
+		versions[v.ID] = v
 	}
 
+	// ensure output is sorted alphabetically
+	sort.Strings(slugs)
+
 	// build up results under Attachments field
-	for _, v := range versions {
+	for _, s := range slugs {
+		v := versions[s]
 		if v.Err != nil {
 			return payload, v.Err
 		}
