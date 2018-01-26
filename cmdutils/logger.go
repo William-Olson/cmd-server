@@ -186,9 +186,9 @@ func (lg *logger) checkBuffer() string {
 func (lg *logger) setScopeLevels() {
 
 	errLevel := lg.scope + ERR_EXT
-	lg.glg.AddErrLevel(errLevel)
+	lg.glg.AddErrLevel(errLevel, glg.STD, true)
 	lg.glg.SetLevelColor(errLevel, glg.Red)
-	lg.glg.AddStdLevel(lg.scope)
+	lg.glg.AddStdLevel(lg.scope, glg.STD, false)
 
 	// set a color for the output
 	lg.glg.SetLevelColor(lg.scope, lg.nextColor())
